@@ -1,0 +1,1470 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ANVIL — AI Creative Lab</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --surface: #111111;
+    --surface2: #1a1a1a;
+    --surface3: #222222;
+    --border: #2a2a2a;
+    --border-bright: #3a3a3a;
+    --accent: #E54A4A;
+    --accent-dim: rgba(229,74,74,0.06);
+    --accent-mid: rgba(229,74,74,0.25);
+    --red-dark: #8B0000;
+    --white: #f0f0f0;
+    --text: #e0e0e0;
+    --text-sub: #aaaaaa;
+    --text-muted: #666666;
+    --gray: #666666;
+    --gray2: #444444;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.4;
+  }
+
+  /* ── HEADER ── */
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 0 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 64px;
+    position: sticky;
+    top: 0;
+    background: rgba(10,10,10,0.97);
+    backdrop-filter: blur(10px);
+    z-index: 100;
+  }
+
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 6px;
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo-badge {
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 3px 7px;
+    letter-spacing: 2px;
+    border: 1px solid var(--accent-mid);
+    color: var(--accent);
+    background: var(--accent-dim);
+  }
+
+  .header-suite { font-size: 10px; color: var(--gray); letter-spacing: 3px; text-transform: uppercase; }
+
+  .header-actions { display: flex; gap: 10px; }
+
+  .settings-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--gray);
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+  }
+  .settings-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .settings-btn.active { border-color: var(--accent); color: var(--accent); }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border-bright);
+    padding: 40px;
+    width: 520px;
+    max-width: 90vw;
+  }
+
+  .modal-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 3px;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+
+  .modal-sub { font-size: 10px; color: var(--gray); letter-spacing: 2px; margin-bottom: 32px; }
+
+  .key-group { margin-bottom: 24px; }
+  .key-label { font-size: 10px; color: var(--gray); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; }
+
+  .key-input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    padding: 12px 16px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .key-input:focus { border-color: var(--accent); }
+  .key-hint { font-size: 10px; color: var(--gray2); margin-top: 6px; }
+
+  .modal-actions { display: flex; gap: 12px; margin-top: 32px; }
+
+  .btn-save {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    padding: 12px 28px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: opacity 0.2s;
+  }
+  .btn-save:hover { opacity: 0.85; }
+
+  .btn-cancel {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--gray);
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    padding: 12px 28px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.2s;
+  }
+  .btn-cancel:hover { border-color: var(--gray); color: var(--white); }
+
+  /* ── ARCHIVE MODAL ── */
+  .archive-modal {
+    background: var(--surface);
+    border: 1px solid var(--border-bright);
+    padding: 40px;
+    width: 760px;
+    max-width: 92vw;
+    max-height: 82vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .archive-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+    gap: 16px;
+    flex-shrink: 0;
+  }
+
+  .archive-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 3px;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+
+  .archive-sub { font-size: 10px; color: var(--gray); letter-spacing: 2px; }
+
+  .archive-list {
+    overflow-y: auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-right: 4px;
+  }
+
+  .archive-list::-webkit-scrollbar { width: 4px; }
+  .archive-list::-webkit-scrollbar-track { background: var(--bg); }
+  .archive-list::-webkit-scrollbar-thumb { background: var(--border-bright); }
+
+  .archive-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 20px;
+    transition: border-color 0.2s;
+  }
+  .archive-item:hover { border-color: var(--border-bright); }
+
+  .archive-item-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    gap: 12px;
+  }
+
+  .archive-item-date {
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    color: var(--accent);
+    letter-spacing: 2px;
+  }
+
+  .archive-item-preview {
+    font-size: 10px;
+    color: var(--gray);
+    letter-spacing: 1px;
+    margin-top: 2px;
+    line-height: 1.6;
+  }
+
+  .archive-item-body {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--text-sub);
+    line-height: 1.9;
+    border-left: 2px solid var(--accent);
+    padding-left: 16px;
+    margin-top: 8px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 160px;
+    overflow-y: auto;
+  }
+
+  .archive-item-body::-webkit-scrollbar { width: 3px; }
+  .archive-item-body::-webkit-scrollbar-thumb { background: var(--border-bright); }
+
+  .archive-item-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .btn-archive-copy {
+    background: none;
+    border: 1px solid var(--border-bright);
+    color: var(--gray);
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 2px;
+    padding: 5px 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+  }
+  .btn-archive-copy:hover { border-color: var(--accent); color: var(--accent); }
+
+  .btn-archive-delete {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--gray2);
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 2px;
+    padding: 5px 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+  }
+  .btn-archive-delete:hover { border-color: #ff3333; color: #ff3333; }
+
+  .archive-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .archive-count { font-size: 10px; color: var(--gray); letter-spacing: 2px; }
+
+  .btn-clear-all {
+    background: none;
+    border: 1px solid #ff3333;
+    color: #ff3333;
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 2px;
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+  }
+  .btn-clear-all:hover { background: rgba(255,51,51,0.08); }
+
+  .archive-empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--gray);
+    font-size: 11px;
+    letter-spacing: 2px;
+    line-height: 2;
+  }
+
+  /* ── MAIN ── */
+  main { max-width: 860px; margin: 0 auto; padding: 48px 40px 120px; }
+
+  .page-header { margin-bottom: 48px; }
+
+  .page-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 64px;
+    letter-spacing: 8px;
+    color: var(--white);
+    line-height: 1;
+    margin-bottom: 12px;
+  }
+  .page-title span { color: var(--accent); }
+
+  .page-desc { font-size: 11px; color: var(--gray); letter-spacing: 2px; line-height: 1.9; max-width: 600px; }
+
+  /* ── INPUT SECTION ── */
+  .section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 32px;
+    margin-bottom: 16px;
+  }
+
+  .section-divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 28px 0;
+  }
+
+  .field-label {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 13px;
+    letter-spacing: 3px;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+
+  .field-hint { font-size: 10px; color: var(--gray); letter-spacing: 1px; margin-bottom: 10px; line-height: 1.7; }
+
+  .text-input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    padding: 16px;
+    outline: none;
+    transition: border-color 0.2s;
+    resize: vertical;
+    line-height: 1.7;
+  }
+  .text-input:focus { border-color: var(--accent); }
+  .text-input::placeholder { color: var(--gray2); }
+
+  .char-counter {
+    font-size: 9px;
+    color: var(--gray2);
+    letter-spacing: 1px;
+    text-align: right;
+    margin-top: 6px;
+  }
+
+  /* ── PRIMARY BUTTON ── */
+  .btn-primary {
+    width: 100%;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    letter-spacing: 6px;
+    padding: 18px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+  }
+  .btn-primary:hover { opacity: 0.88; }
+  .btn-primary:disabled { background: var(--gray2); color: var(--gray); cursor: not-allowed; opacity: 1; }
+
+  /* ── CHAT UI ── */
+  .chat-section { display: none; }
+  .chat-section.active { display: block; }
+
+  .chat-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 24px;
+  }
+
+  .chat-badge {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 11px;
+    letter-spacing: 3px;
+    padding: 4px 12px;
+    border: 1px solid var(--accent-mid);
+    color: var(--accent);
+    background: var(--accent-dim);
+  }
+
+  .chat-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px;
+    letter-spacing: 3px;
+    color: var(--white);
+  }
+
+  .chat-turn-counter {
+    margin-left: auto;
+    font-size: 9px;
+    color: var(--gray);
+    letter-spacing: 2px;
+  }
+
+  .chat-messages { display: flex; flex-direction: column; gap: 16px; margin-bottom: 20px; }
+
+  .chat-msg {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+
+  .chat-msg-role {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 11px;
+    letter-spacing: 2px;
+    min-width: 72px;
+    padding-top: 2px;
+    flex-shrink: 0;
+  }
+  .chat-msg-role.anvil { color: var(--accent); }
+  .chat-msg-role.user { color: var(--gray); }
+
+  .chat-msg-body {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--text);
+    line-height: 1.8;
+    flex: 1;
+    background: var(--surface2);
+    padding: 14px 16px;
+    border-left: 2px solid var(--border-bright);
+    white-space: pre-wrap;
+  }
+  .chat-msg-body.anvil-msg { border-left-color: var(--accent); }
+
+  .chat-input-row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+  }
+
+  .chat-textarea {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    padding: 12px 14px;
+    outline: none;
+    resize: none;
+    transition: border-color 0.2s;
+    line-height: 1.6;
+    min-height: 72px;
+  }
+  .chat-textarea:focus { border-color: var(--accent); }
+  .chat-textarea::placeholder { color: var(--gray2); }
+  .chat-textarea:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .btn-send {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    padding: 12px 20px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    white-space: nowrap;
+    align-self: flex-end;
+    height: 72px;
+  }
+  .btn-send:hover { opacity: 0.85; }
+  .btn-send:disabled { background: var(--gray2); color: var(--gray); cursor: not-allowed; }
+
+  /* ── LOADING ── */
+  .loading-row {
+    display: none;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 0;
+  }
+  .loading-row.active { display: flex; }
+
+  .loading-dot {
+    width: 6px; height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: pulse 1.2s ease-in-out infinite;
+  }
+  .loading-dot:nth-child(2) { animation-delay: 0.2s; }
+  .loading-dot:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 0.2; transform: scale(0.8); }
+    50% { opacity: 1; transform: scale(1); }
+  }
+
+  .loading-text { font-size: 10px; color: var(--gray); letter-spacing: 2px; }
+
+  /* ── ERROR ── */
+  .error-box {
+    background: rgba(229,74,74,0.05);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-size: 11px;
+    padding: 14px 16px;
+    margin: 16px 0;
+    display: none;
+    letter-spacing: 1px;
+    line-height: 1.6;
+  }
+  .error-box.active { display: block; }
+
+  /* ── OUTPUT SECTION ── */
+  .output-section { display: none; margin-top: 8px; }
+  .output-section.active { display: block; }
+
+  /* ── REPORT STYLES (PIERCE 기반) ── */
+  .report-container {
+    padding-top: 8px;
+  }
+
+  .report-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 32px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+    gap: 16px;
+  }
+
+  .report-tag {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .report-meta {
+    font-size: 11px;
+    color: var(--text-sub);
+    line-height: 1.6;
+    letter-spacing: 0.5px;
+  }
+
+  .report-badge {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 13px;
+    letter-spacing: 2px;
+    color: var(--accent);
+    border: 1px solid var(--accent-mid);
+    padding: 4px 10px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .report-section { margin-bottom: 40px; }
+
+  .section-label {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 13px;
+    letter-spacing: 4px;
+    color: var(--accent);
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .argument-prose {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--text);
+    line-height: 2.1;
+    letter-spacing: 0.3px;
+    border-left: 2px solid var(--accent);
+    padding-left: 20px;
+    white-space: pre-wrap;
+  }
+
+  /* ── LAYER 2 BRIEF DRAFT ── */
+  .brief-draft-section { margin-bottom: 28px; }
+
+  .brief-draft-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    opacity: 0.7;
+  }
+
+  .brief-draft-content {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--text-sub);
+    line-height: 1.9;
+    letter-spacing: 0.3px;
+    padding-left: 14px;
+    border-left: 1px solid var(--border-bright);
+  }
+
+  /* ── ACTION ROW ── */
+  .action-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+
+  .action-btn {
+    background: none;
+    border: 1px solid var(--border-bright);
+    color: var(--gray);
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+  }
+  .action-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .action-btn.primary {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .action-btn.primary:hover { background: var(--accent-dim); }
+  .action-btn.generating { opacity: 0.5; cursor: not-allowed; }
+
+  .layer2-loading {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 0;
+  }
+  .layer2-loading.active { display: flex; }
+
+  .layer2-section { display: none; margin-top: 28px; }
+  .layer2-section.active { display: block; }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--accent);
+    color: #fff;
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    padding: 12px 24px;
+    opacity: 0;
+    transition: all 0.3s;
+    pointer-events: none;
+    z-index: 9000;
+    white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    ANVIL
+    <span class="logo-badge">V.01</span>
+  </div>
+  <span class="header-suite">AI CREATIVE LAB — INTELLIGENCE LAYER</span>
+  <div class="header-actions">
+    <button class="settings-btn" id="btnArchive" onclick="openArchive()">◈ ARCHIVE</button>
+    <button class="settings-btn" id="btnApiToggle" onclick="openModal()">⬡ API KEYS</button>
+  </div>
+</header>
+
+<!-- API KEY MODAL -->
+<div class="modal-overlay" id="modalOverlay" onclick="handleOverlayClick(event)">
+  <div class="modal">
+    <div class="modal-title">API CONFIGURATION</div>
+    <div class="modal-sub">KEYS ARE STORED IN LOCALSTORAGE — NEVER SENT TO ANY SERVER</div>
+    <div class="key-group">
+      <div class="key-label">CLAUDE API KEY</div>
+      <input class="key-input" type="password" id="claudeKeyInput" placeholder="sk-ant-...">
+      <div class="key-hint">console.anthropic.com — 대화 + 디렉터 노트 + BRIEF 초안 생성</div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-save" onclick="saveKeys()">SAVE KEY</button>
+      <button class="btn-cancel" onclick="closeModal()">CANCEL</button>
+    </div>
+  </div>
+</div>
+
+<!-- ARCHIVE MODAL -->
+<div class="modal-overlay" id="archiveOverlay" onclick="handleArchiveOverlayClick(event)">
+  <div class="archive-modal">
+    <div class="archive-header">
+      <div>
+        <div class="archive-title">DIRECTOR'S ARCHIVE</div>
+        <div class="archive-sub">SAVED LAYER 1 — DIRECTOR'S NOTES</div>
+      </div>
+      <button class="btn-cancel" onclick="closeArchive()">CLOSE</button>
+    </div>
+    <div class="archive-list" id="archiveList"></div>
+    <div class="archive-footer">
+      <div class="archive-count" id="archiveCount">0 SESSIONS</div>
+      <button class="btn-clear-all" onclick="clearAllArchive()">CLEAR ALL</button>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<main>
+
+  <div class="page-header">
+    <div class="page-title">ANVIL<span>.</span></div>
+    <div class="page-desc">
+      통찰을 올려놓고 두드려 형태를 잡는다.<br>
+      날 것의 메모, SCAN/PIERCE 아웃풋, 막연한 장르 감각 — 어떤 형태든 넣어라.<br>
+      압박 질문을 통해 이 작업에서 끝까지 지킬 단 하나의 제약을 발견한다.
+    </div>
+  </div>
+
+  <div id="errorBox" class="error-box"></div>
+
+  <!-- INPUT SECTION -->
+  <div class="section" id="inputSection">
+    <div class="field-label">인풋</div>
+    <div class="field-hint">SCAN / PIERCE 마크다운, 날 것의 아이디어, 레퍼런스 메모, 막연한 장르 감각 — 형태 불문. 어떤 상태에서든 시작 가능하다.</div>
+    <textarea
+      class="text-input"
+      id="mainInput"
+      rows="10"
+      placeholder="지금 머릿속에 있는 것을 그대로 넣어라.&#10;&#10;SCAN/PIERCE 아웃풋을 붙여넣어도 되고, 메모 수준의 파편이어도 된다.&#10;방향이 있어도 되고, 없어도 된다."
+      oninput="updateCharCount()"
+    ></textarea>
+    <div class="char-counter" id="charCounter">0 CHARS</div>
+
+    <hr class="section-divider">
+
+    <button class="btn-primary" id="btnStart" onclick="startAnvil()">
+      ▶ 대화 시작
+    </button>
+  </div>
+
+  <!-- CHAT SECTION -->
+  <div class="section chat-section" id="chatSection">
+    <div class="chat-header">
+      <div class="chat-badge">ANVIL</div>
+      <div class="chat-title">압박 대화</div>
+      <div class="chat-turn-counter" id="turnCounter">TURN 1</div>
+    </div>
+
+    <div class="chat-messages" id="chatMessages"></div>
+
+    <div class="loading-row" id="chatLoading">
+      <div class="loading-dot"></div>
+      <div class="loading-dot"></div>
+      <div class="loading-dot"></div>
+      <span class="loading-text">ANVIL — PROCESSING...</span>
+    </div>
+
+    <div class="chat-input-row" id="chatInputRow">
+      <textarea
+        class="chat-textarea"
+        id="chatInput"
+        placeholder="답하라."
+        onkeydown="handleKeydown(event)"
+      ></textarea>
+      <button class="btn-send" id="btnSend" onclick="sendMessage()">SEND</button>
+    </div>
+  </div>
+
+  <!-- OUTPUT SECTION — LAYER 1 -->
+  <div class="section output-section" id="outputSection">
+    <div class="report-container" id="reportContainer"></div>
+
+    <!-- LAYER 2 TRIGGER -->
+    <div class="layer2-loading" id="layer2Loading">
+      <div class="loading-dot"></div>
+      <div class="loading-dot"></div>
+      <div class="loading-dot"></div>
+      <span class="loading-text">BRIEF 초안 생성 중...</span>
+    </div>
+
+    <div class="layer2-section" id="layer2Section">
+      <div class="report-section">
+        <div class="section-label">BRIEF DRAFT</div>
+        <div id="briefDraftContent"></div>
+      </div>
+      <div class="action-row" id="layer2ActionRow"></div>
+    </div>
+
+    <div class="action-row" id="layer1ActionRow"></div>
+  </div>
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── STATE ─────────────────────────────────────────────────
+const state = {
+  claudeKey: localStorage.getItem('claude_key') || '',
+  messages: [],
+  turns: 0,
+  layer1Text: '',
+  layer1Done: false,
+  layer2Done: false,
+};
+
+// ── INIT ──────────────────────────────────────────────────
+window.onload = () => {
+  if (state.claudeKey) {
+    document.getElementById('claudeKeyInput').value = state.claudeKey;
+    document.getElementById('btnApiToggle').classList.add('active');
+    document.getElementById('btnApiToggle').textContent = '● API KEYS';
+  }
+  updateArchiveBadge();
+};
+
+// ── CHAR COUNTER ──────────────────────────────────────────
+function updateCharCount() {
+  const len = document.getElementById('mainInput').value.length;
+  document.getElementById('charCounter').textContent = `${len.toLocaleString()} CHARS`;
+}
+
+// ── API MODAL ─────────────────────────────────────────────
+function openModal() { document.getElementById('modalOverlay').classList.add('open'); }
+function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById('modalOverlay')) closeModal();
+}
+
+function saveKeys() {
+  const ck = document.getElementById('claudeKeyInput').value.trim();
+  if (ck) {
+    localStorage.setItem('claude_key', ck);
+    state.claudeKey = ck;
+    document.getElementById('btnApiToggle').classList.add('active');
+    document.getElementById('btnApiToggle').textContent = '● API KEYS';
+  }
+  closeModal();
+  showToast('API KEY SAVED');
+}
+
+// ── ARCHIVE ───────────────────────────────────────────────
+function openArchive() {
+  renderArchiveList();
+  document.getElementById('archiveOverlay').classList.add('open');
+}
+
+function closeArchive() { document.getElementById('archiveOverlay').classList.remove('open'); }
+
+function handleArchiveOverlayClick(e) {
+  if (e.target === document.getElementById('archiveOverlay')) closeArchive();
+}
+
+function getArchiveLogs() {
+  try {
+    return JSON.parse(localStorage.getItem('anvil_log') || '[]');
+  } catch { return []; }
+}
+
+function saveArchiveLogs(logs) {
+  localStorage.setItem('anvil_log', JSON.stringify(logs));
+  updateArchiveBadge();
+}
+
+function updateArchiveBadge() {
+  const logs = getArchiveLogs();
+  const btn = document.getElementById('btnArchive');
+  if (logs.length > 0) {
+    btn.classList.add('active');
+    btn.textContent = `◈ ARCHIVE (${logs.length})`;
+  } else {
+    btn.classList.remove('active');
+    btn.textContent = '◈ ARCHIVE';
+  }
+}
+
+function saveToArchive(layer1Text, inputPreview) {
+  const logs = getArchiveLogs();
+  const entry = {
+    id: Date.now(),
+    date: new Date().toLocaleString('ko-KR', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' }),
+    preview: inputPreview.slice(0, 80).replace(/\n/g, ' '),
+    layer1: layer1Text,
+  };
+  logs.unshift(entry); // 최신 순
+  saveArchiveLogs(logs);
+}
+
+function renderArchiveList() {
+  const logs = getArchiveLogs();
+  const list = document.getElementById('archiveList');
+  const count = document.getElementById('archiveCount');
+  count.textContent = `${logs.length} SESSION${logs.length !== 1 ? 'S' : ''}`;
+
+  if (logs.length === 0) {
+    list.innerHTML = `<div class="archive-empty">저장된 디렉터 노트가 없습니다.<br>대화를 완료하면 레이어 1이 자동으로 저장됩니다.</div>`;
+    return;
+  }
+
+  list.innerHTML = logs.map(entry => `
+    <div class="archive-item" id="archive-item-${entry.id}">
+      <div class="archive-item-header">
+        <div>
+          <div class="archive-item-date">${escHtml(entry.date)}</div>
+          <div class="archive-item-preview">${escHtml(entry.preview)}${entry.preview.length >= 80 ? '...' : ''}</div>
+        </div>
+      </div>
+      <div class="archive-item-body">${escHtml(entry.layer1)}</div>
+      <div class="archive-item-actions">
+        <button class="btn-archive-copy" onclick="copyArchiveItem(${entry.id})">COPY</button>
+        <button class="btn-archive-delete" onclick="deleteArchiveItem(${entry.id})">DELETE</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function copyArchiveItem(id) {
+  const logs = getArchiveLogs();
+  const entry = logs.find(l => l.id === id);
+  if (!entry) return;
+  navigator.clipboard.writeText(entry.layer1).then(() => showToast('COPIED'));
+}
+
+function deleteArchiveItem(id) {
+  const logs = getArchiveLogs().filter(l => l.id !== id);
+  saveArchiveLogs(logs);
+  renderArchiveList();
+  showToast('DELETED');
+}
+
+function clearAllArchive() {
+  if (!confirm('모든 디렉터 노트를 삭제하겠습니까?')) return;
+  saveArchiveLogs([]);
+  renderArchiveList();
+  showToast('ARCHIVE CLEARED');
+}
+
+// ── SYSTEM PROMPT ─────────────────────────────────────────
+function getSystemPrompt() {
+  return `당신은 ANVIL이다. AI Creative Lab의 Intelligence Layer 도구로, 크리에이티브 디렉터 HEECHAN의 작업 방향을 압박 질문을 통해 발견하도록 돕는다.
+
+당신의 역할은 답을 주는 것이 아니다. 질문으로 HEECHAN이 스스로 발견하게 만드는 것이다. 좋은 상담사처럼.
+
+━━━ 핵심 척추 ━━━
+모든 대화는 이 하나의 질문을 향해 수렴한다:
+"이 작업에서 끝까지 지킬 단 하나의 제약은 무엇인가."
+제약이 발견되면 대화는 완성된다. 이 제약이 불편하지 않으면 진짜 제약이 아니다.
+
+━━━ 압박 질문 라이브러리 ━━━
+
+TYPE 1 — 위치 압박 (인풋이 막연할 때 첫 번째로 사용)
+- "이 통찰에서 가장 불편하게 느낀 지점은 어디입니까."
+- "이게 흥미로운 겁니까, 아니면 불편한 겁니까. 둘은 다릅니다."
+- "이 아이디어를 처음 떠올린 게 언제입니까. 어떤 상태에서였습니까."
+
+TYPE 2 — 출처 압박 (레퍼런스와 감각이 섞여있을 때)
+- "이게 나의 감각입니까, 아니면 본 것입니까."
+- "이 방향으로 가고 싶은 이유가 — 이게 좋아서입니까, 아니면 이게 안전해서입니까."
+- "이것과 가장 비슷한 작업물을 하나 대보십시오. 그것과 무엇이 다릅니까."
+
+TYPE 3 — 제약 압박 (방향이 어느 정도 잡혔을 때. 핵심 질문 유형)
+- "이 작업에서 끝까지 지킬 단 하나의 제약은 무엇입니까."
+- "이 방향으로 가면 무엇을 할 수 없게 됩니까. 그것을 포기할 수 있습니까."
+- "지금 선택지가 세 개 있다면, 가장 먼저 버릴 것은 무엇입니까."
+- "이 제약이 불편합니까. 불편하지 않으면 제약이 아닙니다."
+
+TYPE 4 — 번역 압박 (통찰이 시각 언어로 연결 안 될 때)
+- "이것이 이미지 한 장으로는 어떻게 보입니까."
+- "이 작업의 첫 번째 프레임에 무엇이 있습니까."
+- "이 긴장감을 색으로 말한다면 무엇입니까. 이유를 함께 말하십시오."
+- "이것을 보는 사람이 3초 안에 느껴야 하는 것이 무엇입니까."
+
+TYPE 5 — 일관성 압박 (아웃풋 직전 또는 방향이 여러 개로 갈릴 때)
+- "지금까지 나온 것들을 한 문장으로 말한다면 무엇입니까."
+- "첫 번째 씬과 마지막 씬이 같은 문법 위에 있습니까."
+- "이 작업에서 가장 약한 지점이 어디입니까. 그게 왜 약합니까."
+- "이것을 보고 나서 사람들이 기억하는 것이 하나입니까, 여러 개입니까. 하나가 아니라면 아직 덜 깎인 겁니다."
+
+━━━ 판단 로직 ━━━
+인풋이 막연하고 방향이 없다       → TYPE 1 위치 압박
+레퍼런스가 많고 확신이 없다        → TYPE 2 출처 압박
+방향은 있는데 너무 많은 것을 하려 한다 → TYPE 3 제약 압박
+개념이 시각 언어로 내려오지 못한다  → TYPE 4 번역 압박
+파편들이 각자의 논리로 흩어지고 있다 → TYPE 5 일관성 압박
+
+━━━ 대화 원칙 ━━━
+1. 한 턴에 질문은 하나만. 절대 두 개 이상 던지지 말 것. 두 개면 HEECHAN이 쉬운 것에 답한다.
+2. 어려운 것에 답하게 만드는 것이 당신의 역할이다.
+3. 인풋의 성격을 먼저 읽고 어떤 TYPE으로 시작할지 판단하라.
+4. 공감이나 칭찬 없이 바로 질문으로 들어가라. 따뜻한 척 하지 말 것.
+5. 짧게 말하라. 질문 전에 한 문장 관찰은 허용하지만, 그 이상은 불필요하다.
+6. 한국어로 답하라.
+
+━━━ 수렴 판단 ━━━
+다음 조건이 충족되면 대화를 종료하고 레이어 1을 출력하라:
+- 끝까지 지킬 제약이 구체적인 언어로 확정됐다.
+- 포기하기로 한 것이 명확히 드러났다.
+- 방향을 한 문장으로 압축할 수 있는 상태다.
+
+수렴이 됐다고 판단하면 다음 형식으로 출력하라:
+
+[LAYER1_READY]
+(이후에 레이어 1 디렉터 노트 전문을 작성한다)
+
+━━━ 레이어 1 — 디렉터 노트 작성 원칙 ━━━
+- PIERCE 문체: 단문. 주장 → 근거 → 함의의 흐름. 군더더기 없음.
+- "이 방향으로 가기로 했다. 이것을 포기했다. 이 긴장이 핵심이다." 형식.
+- 요약이 아닌 결정의 흔적. 어떤 판단이 어떤 이유로 내려졌는지가 남아야 한다.
+- 반복 사용하면 HEECHAN의 디렉팅 언어 아카이브가 된다는 것을 염두에 두고 작성하라.
+- 500~900자 내외.`;
+}
+
+function getBriefSystemPrompt(layer1Text, inputText) {
+  return `당신은 ANVIL의 레이어 2 생성기다.
+HEECHAN과의 압박 대화가 끝났다. 레이어 1(디렉터 노트)이 확정됐다.
+이제 그 방향을 BRIEF 툴로 넘길 수 있는 초안 형태로 정리하라.
+
+━━━ 원본 인풋 ━━━
+${inputText}
+
+━━━ 레이어 1 — 디렉터 노트 ━━━
+${layer1Text}
+
+━━━ 출력 형식 ━━━
+아래 6개 필드를 순서대로 작성하라. 필드명은 그대로 유지.
+결정된 것만 채워라. 모르거나 대화에서 나오지 않은 것은 "—" 로 남겨라.
+
+카테고리: [장르 — 패션 캠페인 / 숏폼 / 제품 광고 / 포트폴리오 등]
+서사 골격: [방향 한 문장 — 대화에서 수렴된 핵심]
+참고 케이스 및 차별화: [장르 클리셰 + HEECHAN이 비틀기로 한 지점]
+브랜드 / 제품명: [있으면 채움 / 없으면 —]
+씬 수: — (BRIEF에서 결정)
+피사체 구성: — (BRIEF에서 결정)
+
+JSON이나 마크다운 없이 위 텍스트 형식 그대로 출력하라.
+한국어로 작성하라.`;
+}
+
+// ── CLAUDE API ────────────────────────────────────────────
+async function callClaude(messages, maxTokens = 4000) {
+  const key = localStorage.getItem('claude_key');
+  if (!key) throw new Error('Claude API Key가 없습니다. API KEYS를 설정해주세요.');
+
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': key,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-6',
+      max_tokens: maxTokens,
+      system: getSystemPrompt(),
+      messages
+    })
+  });
+
+  const data = await res.json();
+  if (data.error) throw new Error(data.error.message);
+  return data.content[0].text;
+}
+
+async function callClaudeDirect(systemPrompt, userContent, maxTokens = 4000) {
+  const key = localStorage.getItem('claude_key');
+  if (!key) throw new Error('Claude API Key가 없습니다.');
+
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': key,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-6',
+      max_tokens: maxTokens,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userContent }]
+    })
+  });
+
+  const data = await res.json();
+  if (data.error) throw new Error(data.error.message);
+  return data.content[0].text;
+}
+
+// ── START ─────────────────────────────────────────────────
+async function startAnvil() {
+  const input = document.getElementById('mainInput').value.trim();
+  if (input.length < 10) {
+    showError('인풋이 너무 짧습니다. 최소 10자 이상 입력해주세요.');
+    return;
+  }
+
+  clearError();
+  document.getElementById('btnStart').disabled = true;
+
+  // 초기 메시지: 인풋을 사용자 메시지로 전달
+  state.messages = [{ role: 'user', content: `다음 인풋을 읽고 첫 번째 압박 질문을 던져라:\n\n${input}` }];
+  state.turns = 1;
+
+  // 채팅 섹션 보이기
+  const chatSection = document.getElementById('chatSection');
+  chatSection.classList.add('active');
+  chatSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  setLoading(true);
+
+  try {
+    const reply = await callClaude(state.messages);
+    state.messages.push({ role: 'assistant', content: reply });
+
+    // 수렴 체크
+    if (reply.includes('[LAYER1_READY]')) {
+      handleLayer1(reply, input);
+      return;
+    }
+
+    setLoading(false);
+    addChatMessage('anvil', reply);
+    document.getElementById('turnCounter').textContent = `TURN ${state.turns}`;
+    document.getElementById('chatInput').focus();
+  } catch(e) {
+    setLoading(false);
+    showError(e.message);
+    document.getElementById('btnStart').disabled = false;
+  }
+}
+
+// ── SEND MESSAGE ──────────────────────────────────────────
+async function sendMessage() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text || state.layer1Done) return;
+
+  clearError();
+  input.value = '';
+  addChatMessage('user', text);
+
+  state.messages.push({ role: 'user', content: text });
+  state.turns++;
+  document.getElementById('turnCounter').textContent = `TURN ${state.turns}`;
+
+  document.getElementById('btnSend').disabled = true;
+  setLoading(true);
+
+  const originalInput = document.getElementById('mainInput').value.trim();
+
+  try {
+    const reply = await callClaude(state.messages);
+    state.messages.push({ role: 'assistant', content: reply });
+
+    setLoading(false);
+    document.getElementById('btnSend').disabled = false;
+
+    if (reply.includes('[LAYER1_READY]')) {
+      handleLayer1(reply, originalInput);
+      return;
+    }
+
+    addChatMessage('anvil', reply);
+    document.getElementById('chatInput').focus();
+  } catch(e) {
+    setLoading(false);
+    document.getElementById('btnSend').disabled = false;
+    showError(e.message);
+  }
+}
+
+function handleKeydown(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+}
+
+// ── LAYER 1 ───────────────────────────────────────────────
+function handleLayer1(rawReply, originalInput) {
+  const layer1Text = rawReply.replace('[LAYER1_READY]', '').trim();
+  state.layer1Text = layer1Text;
+  state.layer1Done = true;
+
+  // 채팅 입력 비활성화
+  document.getElementById('chatInput').disabled = true;
+  document.getElementById('btnSend').disabled = true;
+  document.getElementById('chatInputRow').style.opacity = '0.35';
+
+  setLoading(false);
+
+  // 아웃풋 섹션 렌더링
+  renderLayer1(layer1Text, originalInput);
+
+  // 아카이브 저장
+  saveToArchive(layer1Text, originalInput);
+
+  const outputSection = document.getElementById('outputSection');
+  outputSection.classList.add('active');
+  setTimeout(() => outputSection.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+}
+
+function renderLayer1(text, originalInput) {
+  const container = document.getElementById('reportContainer');
+
+  const now = new Date().toLocaleString('ko-KR', {
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit'
+  });
+
+  container.innerHTML = `
+    <div class="report-header">
+      <div>
+        <div class="report-tag">ANVIL — LAYER 1</div>
+        <div class="report-meta">${escHtml(now)} · ${state.turns} TURNS</div>
+      </div>
+      <div class="report-badge">DIRECTOR'S NOTE</div>
+    </div>
+    <div class="report-section">
+      <div class="section-label">DIRECTOR'S NOTE</div>
+      <div class="argument-prose" id="layer1Body">${escHtml(text)}</div>
+    </div>
+  `;
+
+  // 레이어 1 액션 버튼
+  document.getElementById('layer1ActionRow').innerHTML = `
+    <button class="action-btn primary" onclick="copyLayer1()">COPY LAYER 1</button>
+    <button class="action-btn primary" id="btnLayer2" onclick="generateLayer2()">▶ BRIEF 초안 생성</button>
+    <button class="action-btn" onclick="resetAll()">↺ 새 세션 시작</button>
+  `;
+}
+
+function copyLayer1() {
+  navigator.clipboard.writeText(state.layer1Text).then(() => showToast('LAYER 1 COPIED'));
+}
+
+// ── LAYER 2 ───────────────────────────────────────────────
+async function generateLayer2() {
+  if (state.layer2Done) return;
+
+  const btn = document.getElementById('btnLayer2');
+  btn.classList.add('generating');
+  btn.textContent = 'GENERATING...';
+
+  document.getElementById('layer2Loading').classList.add('active');
+
+  const originalInput = document.getElementById('mainInput').value.trim();
+  const sysPrompt = getBriefSystemPrompt(state.layer1Text, originalInput);
+
+  try {
+    const result = await callClaudeDirect(sysPrompt, '레이어 2 BRIEF 초안을 생성하라.', 2000);
+    state.layer2Done = true;
+
+    document.getElementById('layer2Loading').classList.remove('active');
+
+    // 필드 파싱 및 렌더링
+    renderLayer2(result);
+
+    const layer2Section = document.getElementById('layer2Section');
+    layer2Section.classList.add('active');
+    layer2Section.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    btn.classList.remove('generating');
+    btn.textContent = '✓ BRIEF DRAFT READY';
+    btn.disabled = true;
+
+  } catch(e) {
+    document.getElementById('layer2Loading').classList.remove('active');
+    btn.classList.remove('generating');
+    btn.textContent = '▶ BRIEF 초안 생성';
+    showError('레이어 2 생성 실패: ' + e.message);
+  }
+}
+
+function renderLayer2(text) {
+  const fields = [
+    { key: '카테고리', label: 'CATEGORY' },
+    { key: '서사 골격', label: 'NARRATIVE SKELETON' },
+    { key: '참고 케이스 및 차별화', label: 'REFERENCE & DIFFERENTIATION' },
+    { key: '브랜드 / 제품명', label: 'BRAND / PRODUCT' },
+    { key: '씬 수', label: 'SCENE COUNT' },
+    { key: '피사체 구성', label: 'SUBJECT COMPOSITION' },
+  ];
+
+  let html = '';
+  fields.forEach(f => {
+    const regex = new RegExp(`${f.key}\\s*:\\s*(.+?)(?=\\n[가-힣a-zA-Z /]+:|$)`, 's');
+    const match = text.match(regex);
+    const value = match ? match[1].trim() : '—';
+    html += `
+      <div class="brief-draft-section">
+        <div class="brief-draft-label">${f.label}</div>
+        <div class="brief-draft-content">${escHtml(value)}</div>
+      </div>
+    `;
+  });
+
+  document.getElementById('briefDraftContent').innerHTML = html;
+
+  document.getElementById('layer2ActionRow').innerHTML = `
+    <button class="action-btn primary" onclick="copyLayer2()">COPY BRIEF DRAFT</button>
+  `;
+}
+
+function copyLayer2() {
+  // 필드 텍스트로 복사
+  const sections = document.querySelectorAll('.brief-draft-section');
+  let text = '';
+  const labels = ['카테고리', '서사 골격', '참고 케이스 및 차별화', '브랜드 / 제품명', '씬 수', '피사체 구성'];
+  sections.forEach((s, i) => {
+    const content = s.querySelector('.brief-draft-content').textContent.trim();
+    text += `${labels[i]}: ${content}\n`;
+  });
+  navigator.clipboard.writeText(text).then(() => showToast('BRIEF DRAFT COPIED'));
+}
+
+// ── HELPERS ───────────────────────────────────────────────
+function addChatMessage(role, text) {
+  const messages = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.className = 'chat-msg';
+  div.innerHTML = `
+    <div class="chat-msg-role ${role}">${role === 'anvil' ? 'ANVIL' : 'YOU'}</div>
+    <div class="chat-msg-body ${role === 'anvil' ? 'anvil-msg' : ''}">${escHtml(text)}</div>
+  `;
+  messages.appendChild(div);
+  div.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function setLoading(on) {
+  document.getElementById('chatLoading').classList.toggle('active', on);
+}
+
+function showError(msg) {
+  const el = document.getElementById('errorBox');
+  el.textContent = msg;
+  el.classList.add('active');
+}
+
+function clearError() {
+  document.getElementById('errorBox').classList.remove('active');
+}
+
+function resetAll() {
+  state.messages = [];
+  state.turns = 0;
+  state.layer1Text = '';
+  state.layer1Done = false;
+  state.layer2Done = false;
+
+  document.getElementById('mainInput').value = '';
+  document.getElementById('charCounter').textContent = '0 CHARS';
+  document.getElementById('chatMessages').innerHTML = '';
+  document.getElementById('chatInput').value = '';
+  document.getElementById('chatInput').disabled = false;
+  document.getElementById('btnSend').disabled = false;
+  document.getElementById('chatInputRow').style.opacity = '1';
+  document.getElementById('btnStart').disabled = false;
+  document.getElementById('turnCounter').textContent = 'TURN 1';
+  document.getElementById('reportContainer').innerHTML = '';
+  document.getElementById('briefDraftContent').innerHTML = '';
+  document.getElementById('layer1ActionRow').innerHTML = '';
+  document.getElementById('layer2ActionRow').innerHTML = '';
+  document.getElementById('layer2Section').classList.remove('active');
+  document.getElementById('layer2Loading').classList.remove('active');
+
+  document.getElementById('chatSection').classList.remove('active');
+  document.getElementById('outputSection').classList.remove('active');
+
+  clearError();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+function escHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/\n/g, '<br>');
+}
+</script>
+</body>
+</html>
